@@ -37,7 +37,8 @@
     <!-- 解密防護遮罩 -->
     <div id="authOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
-            <div class="flex justify-end">
+            <div class="flex justify-between items-center">
+                <button type="button" onclick="resetVaultData()" class="text-xs text-slate-400 hover:text-rose-500 transition">重置本機資料</button>
                 <!-- 登入頁語言切換器 -->
                 <select onchange="changeLanguage(this.value)" class="lang-select text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1">
                     <option value="zh-TW">🇹🇼 繁體中文</option>
@@ -60,26 +61,32 @@
                     <i data-lucide="shield-check" class="w-10 h-10"></i>
                 </div>
                 <h2 class="text-2xl font-bold tracking-tight" data-i18n="appTitle">CipherVault 安全管家</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400" id="authSubtitle" data-i18n="authSubtitle">請輸入主密碼以解密並載入您的帳號與保險資料</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400" id="authSubtitle" data-i18n="authSubtitle">請輸入主密碼以解密載入資料（第一次使用請直接自訂輸入全新密碼）</p>
             </div>
 
             <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="masterPasswordLabel">主解密密碼 (Master Password)</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400" data-i18n="masterPasswordLabel">主解密密碼 (Master Password)</label>
+                    </div>
                     <div class="relative">
-                        <input type="password" id="masterPasswordInput" required placeholder="••••••••••••" 
-                            class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-10">
-                        <button type="button" onclick="togglePasswordVisibility('masterPasswordInput')" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        <input type="password" id="masterPasswordInput" required placeholder="請輸入主密碼" 
+                            class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-12">
+                        <button type="button" onclick="togglePasswordVisibility('masterPasswordInput', 'masterEyeIcon')" class="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5">
+                            <i id="masterEyeIcon" data-lucide="eye" class="w-5 h-5"></i>
                         </button>
                     </div>
+                    <p class="text-[11px] text-indigo-500 dark:text-indigo-400 mt-1.5 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                        <span>💡 提示：若為第一次登入，請輸入您想自訂的主密碼並牢記。</span>
+                    </p>
                 </div>
-                <button type="submit" class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium rounded-xl transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
+                <button type="submit" id="authBtn" class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium rounded-xl transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
                     <i data-lucide="lock" class="w-4 h-4"></i>
                     <span data-i18n="unlockBtn">解密保險庫</span>
                 </button>
             </form>
-            <div id="authError" class="hidden text-xs text-red-500 text-center font-medium" data-i18n="authError">主密碼錯誤，請重新輸入</div>
+            <div id="authError" class="hidden text-xs text-red-500 text-center font-medium" data-i18n="authError">密碼解密失敗，若忘記舊密碼請點擊左上方「重置本機資料」</div>
         </div>
     </div>
 
@@ -97,7 +104,6 @@
                         </div>
                         <span class="font-bold text-lg tracking-wide">CipherVault</span>
                     </div>
-                    <!-- 主題切換 (行動端) -->
                     <button onclick="toggleTheme()" class="md:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
                         <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
                         <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
@@ -106,10 +112,4 @@
 
                 <!-- 分類導覽 -->
                 <nav class="space-y-1">
-                    <button onclick="filterCategory('all')" id="cat-all" class="cat-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                        <i data-lucide="layers" class="w-4 h-4"></i>
-                        <span data-i18n="catAll">全部項目</span>
-                        <span id="count-all" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">0</span>
-                    </button>
-
-                    <button onclick="filterCategory('insurance')" id="cat-insurance" class="cat-btn w-full flex items-center gap
+                    <button onclick="filterCategory
