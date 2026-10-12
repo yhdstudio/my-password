@@ -143,4 +143,579 @@
             <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
                 <div class="px-1 py-1">
                     <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1" data-i18n="languageLabel">語言設定 (Language)</label>
-                    <select onchange="changeLanguage(this.value)" class="lang-select w-full text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py
+                    <select onchange="changeLanguage(this.value)" class="lang-select w-full text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none">
+                        <option value="zh-TW">🇹🇼 繁體中文</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="ja">🇯🇵 日本語</option>
+                        <option value="ko">🇰🇷 한국어</option>
+                        <option value="zh-CN">🇨🇳 簡體中文</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                        <option value="vi">🇻🇳 Tiếng Việt</option>
+                        <option value="id">🇮🇩 Bahasa Indonesia</option>
+                        <option value="th">🇹🇭 ไทย</option>
+                        <option value="pt">🇵🇹 Português</option>
+                    </select>
+                </div>
+
+                <button onclick="toggleTheme()" class="hidden md:flex w-full items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                    <span data-i18n="themeToggle">切換主題模式</span>
+                </button>
+                <button onclick="exportData()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span data-i18n="exportBackup">匯出備份 (JSON)</span>
+                </button>
+                <button onclick="lockVault()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span data-i18n="lockVault">鎖定保險庫</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主要內容區 Main Content -->
+        <main class="flex-1 p-4 sm:p-8 space-y-6 overflow-y-auto">
+            
+            <!-- 頂部搜尋與新增 -->
+            <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
+                <div class="relative flex-1 max-w-md">
+                    <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-3 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderItems()" placeholder="搜尋..." 
+                        class="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <button onclick="openAddModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span data-i18n="addRecord">新增紀錄</span>
+                </button>
+            </div>
+
+            <!-- 卡片列表 Grid -->
+            <div id="itemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+            <!-- 空狀態 -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center space-y-3">
+                <div class="p-4 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-400">
+                    <i data-lucide="inbox" class="w-10 h-10"></i>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 font-medium" data-i18n="noData">尚無相關帳號或保險資料</p>
+                <button onclick="openAddModal()" class="text-xs text-indigo-500 font-semibold hover:underline" data-i18n="clickToAdd">點此立即新增第一筆紀錄</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/編輯 Modal -->
+    <div id="itemModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 my-8 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <h3 class="text-lg font-bold" id="modalTitle" data-i18n="modalTitleAdd">新增資料項目</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="itemForm" onsubmit="saveItem(event)" class="space-y-4">
+                <input type="hidden" id="itemId">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="categoryLabel">資料類別</label>
+                    <select id="itemCategory" onchange="toggleCategoryFields()" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="insurance" data-i18n="optInsurance">🛡️ 保險與健保 (Insurance)</option>
+                        <option value="account" data-i18n="optAccount">🔑 網路帳號密碼 (Account)</option>
+                        <option value="bank" data-i18n="optBank">💳 金融與信用卡 (Bank)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="nameLabel">名稱 / 服務平台</label>
+                    <input type="text" id="itemName" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div id="insuranceFields" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="policyLabel">保單號碼 / 身分證字號 / 健保號碼</label>
+                        <input type="text" id="policyNumber" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="usernameLabel">帳號 / 使用者名稱 / 登入ID</label>
+                        <input type="text" id="itemUsername" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="passwordLabel">密碼</label>
+                        <div class="relative">
+                            <input type="password" id="itemPassword" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-10">
+                            <button type="button" onclick="togglePasswordVisibility('itemPassword', 'modalEyeIcon')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <i id="modalEyeIcon" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" data-i18n="notesLabel">備註 / 說明</label>
+                    <textarea id="itemNotes" rows="3" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl" data-i18n="cancelBtn">取消</button>
+                    <button type="submit" class="flex-1 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/20" data-i18n="saveBtn">儲存資料</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 多國語言字典與邏輯 -->
+    <script>
+        const i18n = {
+            'zh-TW': {
+                appTitle: 'CipherVault 安全管家',
+                authSubtitle: '請輸入主密碼以解密載入資料（第一次使用請直接自訂輸入全新密碼）',
+                masterPasswordLabel: '主解密密碼 (Master Password)',
+                unlockBtn: '解密保險庫',
+                authError: '密碼解密失敗，若忘記舊密碼請點擊左上方「重置本機資料」',
+                catAll: '全部項目',
+                catInsurance: '保險與健保',
+                catAccount: '網路帳號密碼',
+                catBank: '金融與信用卡',
+                languageLabel: '語言設定 (Language)',
+                themeToggle: '切換主題模式',
+                exportBackup: '匯出備份 (JSON)',
+                lockVault: '鎖定保險庫',
+                addRecord: '新增紀錄',
+                searchPlaceholder: '搜尋名稱、號碼、帳號...',
+                noData: '尚無相關帳號或保險資料',
+                clickToAdd: '點此立即新增第一筆紀錄',
+                modalTitleAdd: '新增資料項目',
+                modalTitleEdit: '編輯資料紀錄',
+                categoryLabel: '資料類別',
+                optInsurance: '🛡️ 保險與健保',
+                optAccount: '🔑 網路帳號密碼',
+                optBank: '💳 金融與信用卡',
+                nameLabel: '名稱 / 服務平台',
+                policyLabel: '保單號碼 / 身分識別號',
+                usernameLabel: '帳號 / 使用者名稱',
+                passwordLabel: '密碼',
+                notesLabel: '備註 / 說明',
+                cancelBtn: '取消',
+                saveBtn: '儲存資料',
+                copiedAlert: '已成功複製到剪貼簿！',
+                deleteConfirm: '確定要刪除此筆資料嗎？此操作無法復原。'
+            },
+            'en': {
+                appTitle: 'CipherVault Manager',
+                authSubtitle: 'Enter master password to decrypt (Set a new password for first-time use)',
+                masterPasswordLabel: 'Master Password',
+                unlockBtn: 'Unlock Vault',
+                authError: 'Decryption failed. Click Reset Local Data if password lost.',
+                catAll: 'All Items',
+                catInsurance: 'Insurance & Health',
+                catAccount: 'Accounts & Passwords',
+                catBank: 'Bank & Cards',
+                languageLabel: 'Language',
+                themeToggle: 'Toggle Theme',
+                exportBackup: 'Export Backup (JSON)',
+                lockVault: 'Lock Vault',
+                addRecord: 'Add Item',
+                searchPlaceholder: 'Search name, policy, username...',
+                noData: 'No entries found',
+                clickToAdd: 'Click here to add your first record',
+                modalTitleAdd: 'Add New Record',
+                modalTitleEdit: 'Edit Record',
+                categoryLabel: 'Category',
+                optInsurance: '🛡️ Insurance',
+                optAccount: '🔑 Account Password',
+                optBank: '💳 Bank / Card',
+                nameLabel: 'Name / Platform',
+                policyLabel: 'Policy / ID Number',
+                usernameLabel: 'Username / Account',
+                passwordLabel: 'Password',
+                notesLabel: 'Notes / Details',
+                cancelBtn: 'Cancel',
+                saveBtn: 'Save Record',
+                copiedAlert: 'Copied to clipboard!',
+                deleteConfirm: 'Are you sure you want to delete this record?'
+            }
+        };
+
+        let currentLang = localStorage.getItem('cipher_lang') || 'zh-TW';
+        let vaultData = [];
+        let masterCryptoKey = null;
+        let activeCategory = 'all';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            applyLanguage(currentLang);
+            lucide.createIcons();
+        });
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('cipher_lang', lang);
+            applyLanguage(lang);
+            renderItems();
+        }
+
+        function applyLanguage(lang) {
+            const dict = i18n[lang] || i18n['zh-TW'];
+            document.querySelectorAll('.lang-select').forEach(select => select.value = lang);
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.innerText = dict[key];
+                }
+            });
+
+            document.getElementById('searchInput').placeholder = dict.searchPlaceholder || '搜尋...';
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('cipher_theme') || 'dark';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('cipher_theme', isDark ? 'dark' : 'light');
+        }
+
+        async function deriveKey(password) {
+            const enc = new TextEncoder();
+            const baseKey = await crypto.subtle.importKey(
+                "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+            );
+            return crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: enc.encode("CipherVaultStaticSalt2026"),
+                    iterations: 10000,
+                    hash: "SHA-256"
+                },
+                baseKey,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptData(data, key) {
+            const enc = new TextEncoder();
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const encrypted = await crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv }, key, enc.encode(JSON.stringify(data))
+            );
+            return { iv: Array.from(iv), ciphertext: Array.from(new Uint8Array(encrypted)) };
+        }
+
+        async function decryptData(encryptedObj, key) {
+            const dec = new TextDecoder();
+            const iv = new Uint8Array(encryptedObj.iv);
+            const ciphertext = new Uint8Array(encryptedObj.ciphertext);
+            const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv }, key, ciphertext
+            );
+            return JSON.parse(dec.decode(decrypted));
+        }
+
+        function resetVaultData() {
+            if (confirm("這將清除您瀏覽器上儲存的所有加密密碼資料，恢復為預設狀態。確定重置嗎？")) {
+                localStorage.removeItem('cipher_vault_encrypted');
+                alert("已成功重置，請重新輸入自訂密碼以開啟保險庫。");
+                location.reload();
+            }
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const password = document.getElementById('masterPasswordInput').value;
+            const vault = localStorage.getItem('cipher_vault_encrypted');
+            const authBtn = document.getElementById('authBtn');
+
+            authBtn.disabled = true;
+            document.getElementById('authError').classList.add('hidden');
+
+            try {
+                masterCryptoKey = await deriveKey(password);
+
+                if (vault) {
+                    const encryptedObj = JSON.parse(vault);
+                    vaultData = await decryptData(encryptedObj, masterCryptoKey);
+                } else {
+                    vaultData = [{
+                        id: Date.now().toString(),
+                        category: 'insurance',
+                        name: '中央健康保險署 (健保快易通)',
+                        policyNumber: 'A123456789',
+                        username: 'user@example.com',
+                        password: 'DemoPassword123',
+                        notes: '健保卡號碼、虛擬健保卡與網路繳費查詢資訊。',
+                        updatedAt: new Date().toLocaleDateString()
+                    }];
+                    await saveVaultLocally();
+                }
+
+                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                renderItems();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('authError').classList.remove('hidden');
+            } finally {
+                authBtn.disabled = false;
+            }
+        }
+
+        async function saveVaultLocally() {
+            const encrypted = await encryptData(vaultData, masterCryptoKey);
+            localStorage.setItem('cipher_vault_encrypted', JSON.stringify(encrypted));
+        }
+
+        function renderItems() {
+            const grid = document.getElementById('itemsGrid');
+            const emptyState = document.getElementById('emptyState');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const dict = i18n[currentLang] || i18n['zh-TW'];
+
+            grid.innerHTML = '';
+
+            const filtered = vaultData.filter(item => {
+                const matchesCat = activeCategory === 'all' || item.category === activeCategory;
+                const matchesSearch = item.name.toLowerCase().includes(search) || 
+                                      (item.policyNumber && item.policyNumber.toLowerCase().includes(search)) ||
+                                      (item.username && item.username.toLowerCase().includes(search));
+                return matchesCat && matchesSearch;
+            });
+
+            document.getElementById('count-all').innerText = vaultData.length;
+            document.getElementById('count-insurance').innerText = vaultData.filter(i => i.category === 'insurance').length;
+            document.getElementById('count-account').innerText = vaultData.filter(i => i.category === 'account').length;
+            document.getElementById('count-bank').innerText = vaultData.filter(i => i.category === 'bank').length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                filtered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between";
+                    
+                    let catBadge = '';
+                    if(item.category === 'insurance') catBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">${dict.optInsurance}</span>`;
+                    else if(item.category === 'bank') catBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">${dict.optBank}</span>`;
+                    else catBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">${dict.optAccount}</span>`;
+
+                    card.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <h4 class="font-bold text-base tracking-tight text-slate-900 dark:text-white line-clamp-1">${escapeHtml(item.name)}</h4>
+                                ${catBadge}
+                            </div>
+
+                            ${item.policyNumber ? `
+                            <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-0.5">
+                                <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">${dict.policyLabel}</span>
+                                <div class="flex items-center justify-between font-mono text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                    <span>${escapeHtml(item.policyNumber)}</span>
+                                    <button onclick="copyToClipboard('${escapeJs(item.policyNumber)}')" class="text-slate-400 hover:text-indigo-500 p-1">
+                                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            <div class="space-y-1.5 text-xs">
+                                ${item.username ? `
+                                <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                                    <span class="text-slate-400">${dict.usernameLabel}:</span>
+                                    <div class="flex items-center gap-1 font-mono">
+                                        <span>${escapeHtml(item.username)}</span>
+                                        <button onclick="copyToClipboard('${escapeJs(item.username)}')" class="text-slate-400 hover:text-indigo-500 p-1">
+                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                ` : ''}
+
+                                ${item.password ? `
+                                <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                                    <span class="text-slate-400">${dict.passwordLabel}:</span>
+                                    <div class="flex items-center gap-1 font-mono">
+                                        <span>••••••••</span>
+                                        <button onclick="copyToClipboard('${escapeJs(item.password)}')" class="text-slate-400 hover:text-indigo-500 p-1">
+                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+
+                            ${item.notes ? `
+                            <p class="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50 line-clamp-2">${escapeHtml(item.notes)}</p>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                            <span class="text-slate-400 text-[10px]">${item.updatedAt || ''}</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="editItem('${item.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteItem('${item.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function filterCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'dark:bg-indigo-900/30', 'dark:text-indigo-400');
+                btn.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-indigo-50', 'text-indigo-600', 'dark:bg-indigo-900/30', 'dark:text-indigo-400');
+            }
+            renderItems();
+        }
+
+        function toggleCategoryFields() {
+            const cat = document.getElementById('itemCategory').value;
+            const insFields = document.getElementById('insuranceFields');
+            if(cat === 'insurance') insFields.classList.remove('hidden');
+            else insFields.classList.add('hidden');
+        }
+
+        function openAddModal() {
+            const dict = i18n[currentLang] || i18n['zh-TW'];
+            document.getElementById('modalTitle').innerText = dict.modalTitleAdd;
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemId').value = '';
+            toggleCategoryFields();
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').classList.add('hidden');
+        }
+
+        function editItem(id) {
+            const item = vaultData.find(i => i.id === id);
+            if (!item) return;
+
+            const dict = i18n[currentLang] || i18n['zh-TW'];
+            document.getElementById('modalTitle').innerText = dict.modalTitleEdit;
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('itemCategory').value = item.category || 'account';
+            document.getElementById('itemName').value = item.name || '';
+            document.getElementById('policyNumber').value = item.policyNumber || '';
+            document.getElementById('itemUsername').value = item.username || '';
+            document.getElementById('itemPassword').value = item.password || '';
+            document.getElementById('itemNotes').value = item.notes || '';
+
+            toggleCategoryFields();
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+
+        async function saveItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('itemId').value;
+            const itemData = {
+                id: id || Date.now().toString(),
+                category: document.getElementById('itemCategory').value,
+                name: document.getElementById('itemName').value,
+                policyNumber: document.getElementById('policyNumber').value,
+                username: document.getElementById('itemUsername').value,
+                password: document.getElementById('itemPassword').value,
+                notes: document.getElementById('itemNotes').value,
+                updatedAt: new Date().toLocaleDateString()
+            };
+
+            if (id) {
+                const idx = vaultData.findIndex(i => i.id === id);
+                if (idx !== -1) vaultData[idx] = itemData;
+            } else {
+                vaultData.push(itemData);
+            }
+
+            await saveVaultLocally();
+            closeModal();
+            renderItems();
+        }
+
+        async function deleteItem(id) {
+            const dict = i18n[currentLang] || i18n['zh-TW'];
+            if (confirm(dict.deleteConfirm)) {
+                vaultData = vaultData.filter(i => i.id !== id);
+                await saveVaultLocally();
+                renderItems();
+            }
+        }
+
+        function copyToClipboard(text) {
+            const dict = i18n[currentLang] || i18n['zh-TW'];
+            navigator.clipboard.writeText(text).then(() => {
+                alert(dict.copiedAlert);
+            });
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vaultData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `CipherVault_Backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function lockVault() {
+            masterCryptoKey = null;
+            vaultData = [];
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('authOverlay').classList.remove('hidden');
+            document.getElementById('masterPasswordInput').value = '';
+        }
+
+        // 切換密碼顯示/隱藏
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                if(icon) icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                if(icon) icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        function escapeJs(str) {
+            return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+    </script>
+</body>
+</html>
