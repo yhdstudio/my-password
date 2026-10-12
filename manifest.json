@@ -1,0 +1,17 @@
+{
+  "name": "CipherVault 密碼與保險安全管家",
+  "short_name": "CipherVault",
+  "description": "安全加密儲存您的網路帳號密碼與保險資料",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2092/2092663.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
